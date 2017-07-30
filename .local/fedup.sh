@@ -1,5 +1,5 @@
 # Basic Fedora Setup
-sudo dnf update
+sudo dnf -y update
 sudo rpm -Uvh http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
 sudo rpm -Uvh http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
 sudo rpm -Uvh https://www.folkswithhats.org/repo/$(rpm -E %fedora)/RPMS/noarch/folkswithhats-release-2.0.0-0.fc$(rpm -E %fedora).noarch.rpm
