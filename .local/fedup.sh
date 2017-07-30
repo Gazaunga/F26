@@ -91,7 +91,7 @@ curl -sLf https://spacevim.org/install.sh | bash
 
 # Firefox addons:
 # Hide Caption Titlebar Plus
-# GNOME Theme
+# GNOME Theme (Tweak?)
 # HTTPS Everywhere
 # gTranslate
 # Self Destructing Cookies
