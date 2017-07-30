@@ -15,7 +15,7 @@ sudo dnf -y install postgresql-server postgresql-contrib
 sudo systemctl enable postgresql
 sudo postgresql-setup --initdb --unit postgresql
 sudo dnf -y install phpPgAdmin pgadmin3
-# opera screen terminator
+# opera screen terminator youtube-dl
 # ruby install
 cd ~
 wget -O ruby-install-0.6.1.tar.gz https://github.com/postmodern/ruby-install/archive/v0.6.1.tar.gz
