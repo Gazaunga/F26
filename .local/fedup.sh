@@ -90,7 +90,7 @@ curl -sLf https://spacevim.org/install.sh | bash
 #sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
 # Firefox addons:
-# Hide Titlebar Plus
+# Hide Caption Titlebar Plus
 # GNOME Theme
 # HTTPS Everywhere
 # gTranslate
