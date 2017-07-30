@@ -27,7 +27,7 @@ alias less='less -X'
 
 alias n='nano'
 
-alias weather='curl http://wttr.in/hacienda_heights'
+alias weather='curl http://wttr.in/http://wttr.in/Baltimore'
 
 alias _='sudo'
 
