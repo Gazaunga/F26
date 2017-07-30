@@ -53,6 +53,9 @@ unzip ultimate_oldschool_pc_font_pack_v1.0.zip
 git clone https://github.com/tonsky/FiraCode.git
 git clone https://github.com/sunaku/tamzen-font.git
 git clone https://github.com/FortAwesome/Font-Awesome.git
+git clone https://github.com/adobe-fonts/source-code-pro.git
+cd source-code-pro
+sh build.sh
 sudo fc-cache -v
 
 
