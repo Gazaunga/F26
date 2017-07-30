@@ -58,7 +58,9 @@ cd source-code-pro
 sh build.sh
 sudo fc-cache -v
 
-
+# SpaceVim
+cd ~
+curl -sLf https://spacevim.org/install.sh | bash
 
 
 # flatpak
