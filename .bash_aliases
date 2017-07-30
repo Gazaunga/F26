@@ -43,3 +43,5 @@ alias glg='git log --graph --pretty=format":%C(yellow)%h%Cblue%d%Creset %s %C(wh
 alias glgh='git log --graph --pretty=format":%C(yellow)%h%Cblue%d%Creset %s %C(white) %an,%ar%Creset" --abbrev-commit --decorate | head'
 alias glo='git log --oneline --decorate'
 alias gloh='git log --oneline --decorate | head'
+
+alias htop="glances -w"
