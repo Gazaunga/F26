@@ -1,0 +1,3 @@
+One terminal to run zsh
+
+One terminal to run bash
