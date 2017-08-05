@@ -1,0 +1,15 @@
+sudo dnf copr enable postmodern/ruby-install
+sudo dnf -y install ruby-install
+
+# check to see if it isntalled successfully
+ruby-install -v
+
+# install ruby
+ruby-install --system --latest ruby
+ruby-install jruby
+
+# Latest stable Ruby with RVM
+#sudo dnf -y install patch autoconf gcc-c++ patch libffi-devel automake libtool bison sqlite-devel ImageMagick-devel nodejs git gitg
+#curl -sSL https://rvm.io/mpapis.asc | gpg2 --import
+#curl -L https://get.rvm.io | bash -s stable --ruby
+#sudo npm -g install brunch phantomjs
