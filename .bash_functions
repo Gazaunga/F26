@@ -63,3 +63,15 @@ git log --graph --abbrev-commit --decorate --format=format:"%C(bold blue)%h%C(re
 | | | |  Update release date for 1.3.0 - Jeremy Felt
 '
 }
+
+fedup() {
+sudo dnf -y update
+sudo dnf upgrade --assumeyes --refresh
+sudo dnf -y install dnf-plugin-system-upgrade
+sudo dnf system-upgrade download --assumeyes --refresh --allowerasing --releasever=$1
+sudo dnf system-upgrade --assumeyes reboot
+dnf clean all
+dnf distro-sync
+dnf history >> dnf.log 2>&1
+reboot
+}
