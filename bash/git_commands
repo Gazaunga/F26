@@ -1,0 +1,242 @@
+#!/bin/bash -e
+
+# Generate changelog
+
+alias changelog="/users/tom/src/personal/git-release/bin/git-release -v patch -P -p releases/v -A -s releases/v0.2.0"
+
+#Git Helpers (#TODO : Parameterize this)
+alias git_commits_in_dates_with_author='git log --pretty=format:"%h%x09%an%x09%ad%x09%s" --date=local --before="Nov 01 2009" --after="Jul 1 2009" > git_output.txt'
+alias git_commits_in_dates_without_author='git log --pretty=format:"%h%x09%ad%x09%s" --date=local --before="Nov 01 2009" --after="Jul 1 2009" > git_output.txt'
+alias git_commits_in_dates_with_name_and_date='git log --pretty=format:"%ad%x09%s" --date=local --before="Nov 01 2009" --after="Jul 1 2009" > git_output.txt'
+alias gita='git archive --format=zip master > $1'
+alias gitb='git branch --sort=-committerdate | head -n 5'
+alias sup='startup'
+alias remote_sup="startup 'remove_remote_branches'"
+export clean_all_git_command='cd "${0}/../" && git gc --aggressive | pwd'
+alias clean_all_git_directories="find . -type d -iname '.git' -maxdepth 10 -exec sh -c '${clean_all_git_command}' \"{}\" \;"
+#find . -type d -iname '.git' -maxdepth 10 -exec sh -c 'cd "${0}/../" && git gc --aggressive | pwd' "{}" \;
+#Delete any passed branch name except master
+function delete_local_branch {
+if [[ $1 =~ ^([* ]+)?(master|production)$ ]]; then
+  echo "- [skipped] ${1}"
+else
+  git branch $1 -D -q
+  echo "x [deleted] ${1}"
+fi
+}
+
+reset_submodules() {
+  git submodule foreach --recursive git clean -fdqx
+  git submodule foreach --recursive git reset --hard
+}
+
+# In buildkite pre-checkout
+# if [[ -e "$BUILDKITE_BUILD_CHECKOUT_PATH" ]]; then
+#   cd "$BUILDKITE_BUILD_CHECKOUT_PATH"
+#   git submodule foreach --recursive git reset --hard
+#   git submodule foreach --recursive git clean -fdqx
+# fi
+
+# TODO : Broken scenario:
+# - Open PR exists in branch 'candidate-extras', branches off 'candidate/4.0.3'
+# - 'candidate/4.0.3' has been merged into master
+# - 'candidate/4.0.3' is auto deleted, github then auto closes the open PR for that branch.
+# --> Fix? Check if any open PRs exist that branch off non-master branch that has been merged. If so -> ignore or ask for info.
+delete_merged_remote_branches() {
+#TODO : Collect all refs to delete and do one push to specific remote. (git push origin x1 x2 x3 --delete)
+#     : This would require a multidimensional array
+local remotes="";
+for remote in $(git remote); do
+  remotes="$remote|$remotes"
+done
+remotes="${remotes%?}"
+
+git branch -r --merged | while read merged_branch; do
+  local regex="($remotes)\/(.*)$"
+
+  if [[ $merged_branch =~ $regex ]]; then
+    local full_match=$BASH_REMATCH;
+    local remote_name="${BASH_REMATCH[1]}";
+    local branch_name="${BASH_REMATCH[2]}";
+
+    if [[ $branch_name = 'master' || $branch_name = 'production' ||  $branch_name = 'HEAD' ]]; then
+      echo "- [skipped] ${remote_name}/${branch_name}";
+    else
+      local git_head_descriptor="^HEAD -> (.*)$"
+      # Ignore the HEAD descriptor for git
+      #eg: HEAD -> origin/master
+      if [[ ! $branch_name =~ $git_head_descriptor ]]; then
+
+        if [ -z "$DEBUG" ]; then
+          git push $remote_name "${remote_name}/${branch_name}" --delete
+        else
+          echo "[DISABLED] Would have deleted ${remote_name}/${branch_name} (DELETE_MERGED_REMOTE_BRANCHES=set to remove)"
+        fi;
+      fi;
+    fi;
+  else
+    echo "Error: I don't know how to handle this branch: '${merged_branch}'"
+  fi;
+done
+}
+
+function startup {
+#Quick function to start the day and grab the latest info, fetch all open pull requests, and remove master merged branches
+# Dependencies :
+#    - gem install git-pulls
+#    - For private repos :
+#     - Environment variables : GITHUB_USER + GITHUB_TOKEN
+#     - https://help.github.com/articles/creating-an-oauth-token-for-command-line-use
+# TODO: Remove git-pulls dependency and make a bash only system
+# TODO: Crash out of script if the current branch, or master is in a dirty state
+local remove_remote_branches=false
+if [ "$1" == "remove_remote_branches" ]; then
+  remove_remote_branches=true
+fi;
+for remote in $(git remote); do
+  echo "==> ($remote) Fetching & Sweeping merged remote tags"
+  git fetch $remote --prune --tags
+  echo "==> ($remote) Fetching & Sweeping merged remote branches"
+  git fetch $remote --prune
+done
+if [[ "$remove_remote_branches" == true ]]; then
+  echo "==> Removing any merged remote branches"
+  delete_merged_remote_branches
+fi
+echo "==> Updating master"
+git checkout master
+git pull
+# Disabled as git-pulls is failing with octokit for un-debugged reason
+# echo "==> Fetching any open pull requests"
+# git-pulls update
+# git-pulls checkout --force
+echo "==> Removing any local branches merged into master"
+git branch --merged master | while read i; do delete_local_branch "$i"; done
+echo "==> Clearing any logs"
+for f in log/*.log
+do
+  if [ -f $f ]; then
+    echo "Nulling ${f}"
+    cat /dev/null > $f
+  fi
+done
+if [[ -e ".gitmodules" ]]; then
+  echo "==> Updating git submodules"
+  git submodule update --init
+fi;
+echo "==> Checking GIT, pruning to 2 weeks"
+git gc
+}
+
+function git_commits_by_user {
+git log --pretty=format:%an | awk '{ ++c[$0]; } END { for(cc in c) printf "%5d %s\n",c[cc],cc; }'| sort -r
+}
+
+
+##########################
+#Display                 #
+##########################
+function parse_git_branch {
+  git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e "s/* \(.*\)/\1$(parse_git_dirty)/"
+}
+
+function parse_git_dirty {
+  [[ $(git status --porcelain 2> /dev/null | tail -n1) != "" ]] && echo "(☠ )"
+}
+
+#Display custom dirty git branch items
+export PS1='\[\033[01;32m\]\w $(git branch &>/dev/null; if [ $? -eq 0 ]; then echo "\[\033[01;34m\]$(parse_git_branch)"; fi) \$ \[\033[00m\]'
+
+
+##########################
+# Analysis               #
+##########################
+function analyse_remote_branches {
+  printf "\n\n== Loading remote branches..\n"
+  git gc --prune=now
+  git remote prune origin
+  git for-each-ref --shell --format="%(refname)" refs/remotes/origin | \
+  while read branch
+  do
+    branch_name=${branch/refs\/remotes\/origin\//}
+    printf "\nRemote Branch : ${branch_name}\n"
+    result=`git log master..origin/${branch_name//\'/} --pretty=format:" -------> %h | %ar | %an | %s" --abbrev-commit --date-order --decorate -n 8`
+    if [ "$result" == "" ]; then
+      echo " <--> Commits all  merged in master"
+    else
+      echo " --> Commits not in master : "
+      #echo "${result}"
+      printf "$result\n"
+    fi
+    echo "---"
+
+  done
+
+}
+
+#Thanks to Nathan DeVries
+#https://gist.github.com/190002
+function clear_gitignored_files {
+  cat .gitignore | egrep -v "^#|^$" | while read line; do
+  if [ -s "$line" ]; then
+  OLD_IFS=$IFS; IFS=""
+      for ignored_file in $( git ls-files "$line" ); do
+  git rm --cached "$ignored_file"
+      done
+  IFS=$OLD_IFS
+    fi
+  done
+}
+
+##########################
+# Destructive            #
+##########################
+
+function delete_file_from_all_git_history {
+  local file=$1
+
+  git filter-branch --force --index-filter \
+  "git rm --cached --ignore-unmatch $file" \
+  --prune-empty --tag-name-filter cat -- --all
+}
+
+function delete_all_local_tags {
+  git-for-each-ref --shell --format="%(refname)" refs/tags | \
+  while read tag
+  do
+          tag_name=${tag/refs\/tags\//}
+  				git tag ${tag_name//\'/} -d
+  done
+}
+
+function delete_all_local_branches {
+  printf "\n\n\n\n== Would you like to delete ALL local branches? \nTHIS ACTION CANNOT BE UNDONE WITHOUT A WIZARDS HAT\nPlease select option (or any key to skip):\n"
+  echo "1) Delete all - (git branch branch_name -D)"
+  echo "-) Skip"
+  read -n1 -s -r -t30 INPUT
+  case "$INPUT" in
+  "1")
+  echo "== Deleting ALL local branches (please wait)..."
+  #'refs/remotes/origin' --> Cannot do remotes yet... run git gc --prune=now before updating list
+  local_branches=('refs/heads' )
+  for branch_repo in ${local_branches[@]}
+  do
+    git for-each-ref --shell --format="%(refname)" $branch_repo | \
+    while read branch
+    do
+
+            branch_name=${branch/$branch_repo\//}
+
+            if [ $branch_name != "'master'" -a $branch_name != "'dev'" ]; then
+              git branch ${branch_name//\'/} -D
+              echo "${branch_name} deleted."
+
+            else
+            	echo "--> ${branch_name//\'/} skipped..."
+            fi
+    done
+  done;;
+  *)
+  echo "== Delete skipped." ;;
+  esac
+}
