@@ -10,3 +10,8 @@
 if [ "$TERM" = "screen" ]; then
     export TERM=screen-256color
 fi
+
+source ~/bash/bash_commands
+source ~/bash/exports
+source ~/bash/git_commands
+source ~/bash/paths
