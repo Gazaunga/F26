@@ -15,3 +15,4 @@ source ~/bash/bash_commands
 source ~/bash/exports
 source ~/bash/git_commands
 source ~/bash/paths
+source ~/bash/color_messages
