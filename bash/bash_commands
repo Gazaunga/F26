@@ -1,0 +1,9 @@
+#!/bin/bash -e
+
+# Generic bash commands
+
+function outdated {
+  if [ -f ./Gemfile ]; then
+    bundle outdated
+fi
+}
