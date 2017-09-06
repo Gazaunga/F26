@@ -4,6 +4,10 @@ alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
 
+# save package list from one system and install them on another
+rpm -qa --qf "%{NAME}\n" > package-list
+sudo dnf install $(cat package-list | tr '\n' ' ')
+
 # Get my IP address using HTTPS.
 alias httpsip='curl -s https://4.ifcfg.me/'
 
